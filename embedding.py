@@ -3,6 +3,7 @@ import concurrent.futures
 import json
 from config import g_client
 
+request_count = 0
 async def get_embedding_concurrently(text, pool, semaphore):
     async with semaphore:
         loop = asyncio.get_event_loop()
