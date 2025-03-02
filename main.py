@@ -2,16 +2,16 @@ import asyncio
 import os
 import aiofiles
 import json
-from .config import (
+from config import (
     pc, client, g_client, PINECONE_API_KEY, OPENAI_API_KEY, 
     GEMINI_API_KEY, INDEX_NAME, DIMENSION, MAX_DEPTH, MAX_LLM_REQUEST_COUNT,
     CHUNK_SEMAPHORE_LIMIT, MAX_CONCURRENT_TASKS
 )
-from .crawler import worker, queue, results, processed_urls, pending_urls,get_file_name, save_results
-from .crawler import llm_request_counts, count_locks
-from .chunker import process_file
-from .embedding import process_files
-from .pinecone_utils import load_json_files_for_pinecone, ensure_index_exists, pine_chunks
+from crawler import worker, queue, results, processed_urls, pending_urls,get_file_name, save_results
+from crawler import llm_request_counts, count_locks
+from chunker import process_file
+from embedding import process_files
+from pinecone_utils import load_json_files_for_pinecone, ensure_index_exists, pine_chunks
 
 max_llm_request_count = MAX_LLM_REQUEST_COUNT
 max_concurrent_tasks = MAX_CONCURRENT_TASKS
@@ -145,6 +145,8 @@ async def main(start_urls: list[str], num_workers: int = 50):
 
 if __name__ == "__main__":
     # Example usage
-    # start_urls = [...]
-    # asyncio.run(main(start_urls))
-    pass
+    start_urls = [
+        "https://milvus.io/docs/v2.1.x"
+    ]
+    asyncio.run(main(start_urls))
+    

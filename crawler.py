@@ -8,7 +8,7 @@ import time
 from filters import filter_prompt
 from openai import Client
 from typing import List, Dict
-from .config import (
+from config import (
     client, OPENAI_API_KEY, GEMINI_API_KEY, pc,
     MAX_DEPTH, MAX_LLM_REQUEST_COUNT
 )

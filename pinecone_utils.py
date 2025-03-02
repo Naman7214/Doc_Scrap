@@ -4,7 +4,7 @@ import time
 import itertools
 import json
 from typing import List, Dict, Any
-from .config import pc, INDEX_NAME, DIMENSION
+from config import pc, INDEX_NAME, DIMENSION
 from pinecone import ServerlessSpec
 
 

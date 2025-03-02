@@ -3,8 +3,8 @@ import json
 import os
 import aiofiles
 from typing import List, Dict
-from .config import client, CHUNK_SEMAPHORE_LIMIT
-from .filters import chunk_prompt
+from config import client, CHUNK_SEMAPHORE_LIMIT
+from filters import chunk_prompt
 import openai
 import time
 import re
