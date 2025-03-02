@@ -9,7 +9,7 @@ load_dotenv()
 OPENAI_API_KEY = os.getenv("OPENAI_KEY")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 PINECONE_API_KEY = os.getenv("PINECONE_API_KEY")
-INDEX_NAME = os.getenv("INDEX_NAME", "chunks-for-agent1")
+INDEX_NAME = os.getenv("INDEX_NAME", "DocumentIndex")
 
 DIMENSION = 768
 MAX_DEPTH = 4

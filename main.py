@@ -12,7 +12,7 @@ from crawler import llm_request_counts, count_locks
 from chunker import process_file
 from embedding import process_files
 from pinecone_utils import load_json_files_for_pinecone, ensure_index_exists, pine_chunks
-
+from urls import start_urls
 max_llm_request_count = MAX_LLM_REQUEST_COUNT
 max_concurrent_tasks = MAX_CONCURRENT_TASKS
 
@@ -144,9 +144,6 @@ async def main(start_urls: list[str], num_workers: int = 50):
         print(f"Error during upsert process: {str(e)}")
 
 if __name__ == "__main__":
-    # Example usage
-    start_urls = [
-        "https://milvus.io/docs/v2.1.x"
-    ]
+
     asyncio.run(main(start_urls))
     
