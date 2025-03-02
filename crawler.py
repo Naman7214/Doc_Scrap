@@ -23,6 +23,8 @@ pending_urls = set()
 llm_request_counts = {}
 count_locks = {}
 log_lock = asyncio.Lock()
+total_input_tokens = 0
+total_output_tokens = 0
 
 max_llm_request_count = MAX_LLM_REQUEST_COUNT
 

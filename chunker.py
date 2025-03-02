@@ -9,6 +9,12 @@ import openai
 import time
 import re
 
+
+chunk_llm_request_count = 0
+chunk_total_input_tokens = 0
+chunk_total_output_tokens = 0
+
+
 async def process_file(file_path, semaphore):
     log_dir = "chunk_usage_logs"
     os.makedirs(log_dir, exist_ok=True)
