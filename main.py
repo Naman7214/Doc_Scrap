@@ -15,7 +15,7 @@ from urls import start_urls
 max_llm_request_count = MAX_LLM_REQUEST_COUNT
 max_concurrent_tasks = MAX_CONCURRENT_TASKS
 
-async def main(start_urls: list[str], num_workers: int = 50):
+async def main(start_urls: list[str], num_workers: int = 60):
     global results, llm_request_counts, count_locks
     
     # Initialize locks more efficiently
@@ -58,7 +58,6 @@ async def main(start_urls: list[str], num_workers: int = 50):
     for file_name, count in llm_request_counts.items():
         print(f"{file_name}: {count}/{max_llm_request_count} LLM calls, {len(results.get(file_name, []))} pages crawled")
     
-
     #================================================================================================
     #================================= CHUNKING ====================================================
     #================================================================================================

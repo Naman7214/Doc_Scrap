@@ -206,12 +206,10 @@ async def crawl_page(url: str, depth: int, file_name):
         return
     
     if not result.success:
-        print(result)
         print(f"[FAILED] Crawling unsuccessful for {url}")
         return
         
     if not result.success:
-        print(result.error_message)
         print(f"[FAILED] Crawling unsuccessful for {url}")
         return
     # Store the result
@@ -239,12 +237,11 @@ async def crawl_page(url: str, depth: int, file_name):
     # Process in batches
     for i in range(0, len(internal_links), batch_size):
         batch = internal_links[i:i + batch_size]
-        print(f"input length of gpt {len(batch)}")
         filtered_batch = await filter_links_gpt(batch, file_name)
         all_filtered_links.extend(filtered_batch)
     
     filtered_links = list(set(all_filtered_links))
-    print(f"============{filtered_links}")
+
     
     new_links = []
     for link in filtered_links:

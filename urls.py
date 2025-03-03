@@ -119,6 +119,6 @@
 # ]
 
 start_urls = [
-    "https://developer.hashicorp.com/vault/docs"
+    "https://aws.amazon.com/documentation-overview/"
 ]
 
