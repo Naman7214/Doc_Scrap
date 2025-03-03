@@ -226,17 +226,23 @@ async def crawl_page(url: str, depth: int, file_name):
     # Only continue if we haven't reached the LLM limit
     if not await should_process_url(file_name):
         return
-    
     # Extract and filter internal links efficiently
-    internal_links = [
+    internal_links = list(set([
         remove_fragment(x["href"]) for x in result.links.get("internal", [])
-    ]
-    internal_links = list(set(internal_links))
+    ]))
     # Apply domain filter first to reduce the number of URLs sent to GPT
     internal_links = filter_urls_by_domain(url, internal_links)
     
-    # Filter links using GPT
-    filtered_links = await filter_links_gpt(internal_links, file_name)
+    # Batch processing: Split the internal_links into batches of 180
+    batch_size = 180
+    all_filtered_links = []
+    # Process in batches
+    for i in range(0, len(internal_links), batch_size):
+        batch = internal_links[i:i + batch_size]
+        filtered_batch = await filter_links_gpt(batch, file_name)
+        all_filtered_links.extend(filtered_batch)
+    
+    filtered_links = list(set(all_filtered_links))
     
     # Efficiently process new links
     if await should_process_url(file_name):
