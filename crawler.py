@@ -170,10 +170,6 @@ async def crawl_page(url: str, depth: int, file_name):
     """
     global results, queue, processed_urls
     
-    # First check if we should process this URL
-    if not await should_process_url(file_name):
-        return
-    
     if depth >= MAX_DEPTH:
         return
     
@@ -198,8 +194,7 @@ async def crawl_page(url: str, depth: int, file_name):
             exclude_external_images=True,
             verbose=False,
             cache_mode=CacheMode.DISABLED,
-            markdown_generator=md_generator,
-            page_timeout=10000,
+            markdown_generator=md_generator
         )
         browser_conf = BrowserConfig(text_mode=True, light_mode=True, verbose=False)
         
@@ -211,9 +206,14 @@ async def crawl_page(url: str, depth: int, file_name):
         return
     
     if not result.success:
+        print(result)
         print(f"[FAILED] Crawling unsuccessful for {url}")
         return
         
+    if not result.success:
+        print(result.error_message)
+        print(f"[FAILED] Crawling unsuccessful for {url}")
+        return
     # Store the result
     if file_name not in results:
         results[file_name] = []
@@ -222,10 +222,10 @@ async def crawl_page(url: str, depth: int, file_name):
     # results[file_name].append({"href": url, "content": merged_content})
     results[file_name].append({"href": url, "content": result.fit_markdown})
 
-    
     # Only continue if we haven't reached the LLM limit
     if not await should_process_url(file_name):
         return
+    
     # Extract and filter internal links efficiently
     internal_links = list(set([
         remove_fragment(x["href"]) for x in result.links.get("internal", [])
@@ -239,25 +239,25 @@ async def crawl_page(url: str, depth: int, file_name):
     # Process in batches
     for i in range(0, len(internal_links), batch_size):
         batch = internal_links[i:i + batch_size]
+        print(f"input length of gpt {len(batch)}")
         filtered_batch = await filter_links_gpt(batch, file_name)
         all_filtered_links.extend(filtered_batch)
     
     filtered_links = list(set(all_filtered_links))
+    print(f"============{filtered_links}")
     
-    # Efficiently process new links
-    if await should_process_url(file_name):
-        new_links = []
-        for link in filtered_links:
-            # Check if we've processed or are pending on this URL
-            if link not in processed_urls :
-                processed_urls.add(link)
-                new_links.append((link, depth + 1, file_name))
-        
-        # Add all new links to queue at once
-        for link_info in new_links:
-            await queue.put(link_info)
+    new_links = []
+    for link in filtered_links:
+        # Check if we've processed or are pending on this URL
+        if link not in processed_urls :
+            processed_urls.add(link)
+            new_links.append((link, depth + 1, file_name))
     
-    # Mark as no longer pending
+    # Add all new links to queue at once
+    for link_info in new_links:
+        await queue.put(link_info)
+    
+
 
 async def get_file_name(base_url):
     try:

@@ -11,7 +11,7 @@ The goal is to scrape web pages that contain documentation related to SDKs or fr
 -Also Exclude urls that redirect to documentation in some different languages. I only want pages that are in English.
 -Also Filter if there are repeating hyperlinks linking to same page.
 -If the URL has # there is high probability that its a hyperlink.
--Also filter our repeating URLs, the output should not contain any repeating URLs.
+-Also filter out repeating URLs, the output should not contain any repeating URLs.
 -You can assume that the URLs are valid and well-formed.
 ###EXAMPLE###
 INPUT:
@@ -24,7 +24,12 @@ INPUT:
     "https://docs.pinecone.io/guides/get-started/overview",
     "https://docs.pinecone.io/reference/api/introduction",
     "https://ai.google.dev/gemini-api/docs/migrate#json_response",
-    "https://ai.google.dev/gemini-api/docs/migrate#search_grounding"
+    "https://ai.google.dev/gemini-api/docs/migrate#search_grounding",
+    "https://docs.pinecone.io/reference/api/introduction",
+    "https://docs.pinecone.io/reference/api/introduction",
+    "https://docs.pinecone.io/",
+
+    
 ]
 OUTPUT:
 [
