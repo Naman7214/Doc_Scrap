@@ -3,8 +3,7 @@ import os
 import aiofiles
 import json
 from config import (
-    pc, client, g_client, PINECONE_API_KEY, OPENAI_API_KEY, 
-    GEMINI_API_KEY, INDEX_NAME, DIMENSION, MAX_DEPTH, MAX_LLM_REQUEST_COUNT,
+    pc, INDEX_NAME, MAX_LLM_REQUEST_COUNT,
     CHUNK_SEMAPHORE_LIMIT, MAX_CONCURRENT_TASKS
 )
 from crawler import worker, queue, results, processed_urls, pending_urls,get_file_name, save_results

@@ -2,7 +2,9 @@ import asyncio
 import concurrent.futures
 import json
 from config import g_client
+from fastembed import TextEmbedding
 
+model = TextEmbedding("BAAI/bge-base-en-v1.5")
 request_count = 0
 async def get_embedding_concurrently(text, pool, semaphore):
     async with semaphore:
@@ -15,12 +17,15 @@ def get_embedding(text):
     request_count += 1
     print(f"Embedding text. Request count: {request_count}")
     try:
-        response = g_client.models.embed_content(
-            model="text-embedding-004",
-            contents=[text]  
-        )
+        embeddings = list(model.passage_embed(text))
+
+        # response = g_client.models.embed_content(
+        #     model="text-embedding-004",
+        #     contents=[text]  
+        # )
         print(f"Received response")
-        return response.embeddings[0].values
+        # return response.embeddings[0].values
+        return embeddings
 
     except Exception as e:
         print(f"An error occurred: {e}")
