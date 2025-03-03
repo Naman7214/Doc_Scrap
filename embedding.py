@@ -83,5 +83,5 @@ async def embed_process_file(source_file, pool, semaphore):
 async def process_files(file_list, max_concurrent_tasks):
     semaphore = asyncio.Semaphore(max_concurrent_tasks)
     with concurrent.futures.ThreadPoolExecutor() as pool:
-        tasks = [embed_process_file(file, pool, semaphore) for file in file_list]
+        tasks = [embed_process_file(file_list, pool, semaphore)]
         await asyncio.gather(*tasks)
