@@ -4,14 +4,25 @@ import json
 from config import g_client
 from fastembed import TextEmbedding
 import types
+from pinecone_text.sparse import BM25Encoder
+
 
 model = TextEmbedding("BAAI/bge-base-en-v1.5")
+bm25 = BM25Encoder().default()
+
 request_count = 0
 async def get_embedding_concurrently(text, pool, semaphore):
     async with semaphore:
         loop = asyncio.get_event_loop()
         result = await loop.run_in_executor(pool, get_embedding, text)
         return result
+
+def get_sparse_embedding(text):
+    doc_sparse_vector = bm25.encode_documents(text)
+    return {
+        "indices": doc_sparse_vector["indices"],  
+        "values": doc_sparse_vector["values"]
+    }
 
 def get_embedding(text):
     global request_count
@@ -58,6 +69,7 @@ async def embed_process_file(source_file, pool, semaphore):
 
     for item, embedding in zip(data, embeddings):
         item["embedding"] = embedding
+        item["sparse_values"] = get_sparse_embedding(item["chunked_data"])
         embedded_count += 1
         print(f"Embedded {embedded_count}/{total_chunks} chunks in {source_file}")
 
@@ -71,5 +83,5 @@ async def embed_process_file(source_file, pool, semaphore):
 async def process_files(file_list, max_concurrent_tasks):
     semaphore = asyncio.Semaphore(max_concurrent_tasks)
     with concurrent.futures.ThreadPoolExecutor() as pool:
-        tasks = [embed_process_file(file_list, pool, semaphore)]
+        tasks = [embed_process_file(file, pool, semaphore) for file in file_list]
         await asyncio.gather(*tasks)
