@@ -69,7 +69,8 @@ def load_json_files_for_pinecone(directory_path: str) -> List[Dict[str, Any]]:
                 record = {
                     'id': chunk_id,
                     'values': embedding,
-                    'metadata': metadata
+                    'metadata': metadata,
+                    "sparse_values": chunk["sparse_values"]
                 }
                 
                 pinecone_records.append(record)
@@ -83,7 +84,7 @@ def load_json_files_for_pinecone(directory_path: str) -> List[Dict[str, Any]]:
     return pinecone_records
 
 
-def ensure_index_exists(index_name: str, dimension: int, metric: str = "cosine") -> bool:
+def ensure_index_exists(index_name: str, dimension: int, metric: str = "dotproduct") -> bool:
     """
     Check if index exists, and create it if not.
     

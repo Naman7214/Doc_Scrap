@@ -13,7 +13,7 @@ from openai import OpenAI
 from pinecone.grpc import PineconeGRPC as Pinecone
 
 from config import INDEX_NAME, pc
-from embedding import get_embedding
+from embedding import get_embedding, get_sparse_embedding
 
 load_dotenv()
 from judge_prompt import judge_prompt
@@ -55,6 +55,7 @@ for query in queries:
         include_metadata=True,
         namespace="default",
         include_values=False,
+        sparse_vector=get_sparse_embedding(text= query)
     )
 
     retrieved_chunks = [
