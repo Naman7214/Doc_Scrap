@@ -6,7 +6,7 @@ from config import (
     pc, INDEX_NAME, MAX_LLM_REQUEST_COUNT,
     CHUNK_SEMAPHORE_LIMIT, MAX_CONCURRENT_TASKS
 )
-from crawler import worker, queue, results, processed_urls, pending_urls,get_file_name, save_results
+from crawler import worker, queue, results, processed_urls,get_file_name, save_results
 from crawler import llm_request_counts, count_locks
 from chunker import process_file
 from embedding import process_files
@@ -16,7 +16,7 @@ max_llm_request_count = MAX_LLM_REQUEST_COUNT
 max_concurrent_tasks = MAX_CONCURRENT_TASKS
 
 async def main(start_urls: list[str], num_workers: int = 50):
-    global results, llm_request_counts, count_locks, pending_urls
+    global results, llm_request_counts, count_locks
     
     # Initialize locks more efficiently
     file_names = []
@@ -34,7 +34,6 @@ async def main(start_urls: list[str], num_workers: int = 50):
         
         # Add to queue
         processed_urls.add(url)
-        pending_urls.add(url)
         await queue.put((url, 1, file_name))
         print(f"Starting with base URL: {url} -> {file_name}")
     

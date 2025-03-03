@@ -19,7 +19,6 @@ import os
 queue = asyncio.Queue()
 results = {}
 processed_urls = set()
-pending_urls = set()
 llm_request_counts = {}
 count_locks = {}
 log_lock = asyncio.Lock()
@@ -169,7 +168,7 @@ async def crawl_page(url: str, depth: int, file_name):
     """
     Scrape a single URL using Crawl4AI, extract internal links, and process markdown.
     """
-    global results, queue, processed_urls, pending_urls
+    global results, queue, processed_urls
     
     # First check if we should process this URL
     if not await should_process_url(file_name):
@@ -209,12 +208,10 @@ async def crawl_page(url: str, depth: int, file_name):
     except Exception as e:
         print(f"[ERROR] Failed to scrape {url}: {e}")
         # Remove from pending to allow other URLs to be processed
-        pending_urls.discard(url)
         return
     
     if not result.success:
         print(f"[FAILED] Crawling unsuccessful for {url}")
-        pending_urls.discard(url)
         return
         
     # Store the result
@@ -228,14 +225,13 @@ async def crawl_page(url: str, depth: int, file_name):
     
     # Only continue if we haven't reached the LLM limit
     if not await should_process_url(file_name):
-        pending_urls.discard(url)
         return
     
     # Extract and filter internal links efficiently
     internal_links = [
         remove_fragment(x["href"]) for x in result.links.get("internal", [])
     ]
-    
+    internal_links = list(set(internal_links))
     # Apply domain filter first to reduce the number of URLs sent to GPT
     internal_links = filter_urls_by_domain(url, internal_links)
     
@@ -247,9 +243,8 @@ async def crawl_page(url: str, depth: int, file_name):
         new_links = []
         for link in filtered_links:
             # Check if we've processed or are pending on this URL
-            if link not in processed_urls and link not in pending_urls:
+            if link not in processed_urls :
                 processed_urls.add(link)
-                pending_urls.add(link)
                 new_links.append((link, depth + 1, file_name))
         
         # Add all new links to queue at once
@@ -257,7 +252,6 @@ async def crawl_page(url: str, depth: int, file_name):
             await queue.put(link_info)
     
     # Mark as no longer pending
-    pending_urls.discard(url)
 
 async def get_file_name(base_url):
     try:
