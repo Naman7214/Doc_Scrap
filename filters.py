@@ -11,6 +11,8 @@ The goal is to scrape web pages that contain documentation related to SDKs or fr
 -Also Exclude urls that redirect to documentation in some different languages. I only want pages that are in English.
 -Also Filter if there are repeating hyperlinks linking to same page.
 -If the URL has # there is high probability that its a hyperlink.
+-Also filter our repeating URLs, the output should not contain any repeating URLs.
+-You can assume that the URLs are valid and well-formed.
 ###EXAMPLE###
 INPUT:
 [
