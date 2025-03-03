@@ -3,6 +3,7 @@ import concurrent.futures
 import json
 from config import g_client
 from fastembed import TextEmbedding
+import types
 
 model = TextEmbedding("BAAI/bge-base-en-v1.5")
 request_count = 0
@@ -17,16 +18,23 @@ def get_embedding(text):
     request_count += 1
     print(f"Embedding text. Request count: {request_count}")
     try:
-        embeddings = list(model.passage_embed(text))
+        # Get the raw embedding output, and force conversion from generator to list.
+        raw = model.embed(text, batch_size=24, parallel=True)
+        # If raw is a generator, exhaust it.
+        if isinstance(raw, types.GeneratorType):
+            raw = list(raw)
+        
+        # Now, if raw is a numpy array, convert it to a list.
+        if hasattr(raw, 'tolist'):
+            embeddings = raw.tolist()
+        # Otherwise, if it's already a list, check each element.
+        elif isinstance(raw, list):
+            embeddings = [e.tolist() if hasattr(e, 'tolist') else e for e in raw]
+        else:
+            embeddings = raw
 
-        # response = g_client.models.embed_content(
-        #     model="text-embedding-004",
-        #     contents=[text]  
-        # )
-        print(f"Received response")
-        # return response.embeddings[0].values
-        return embeddings
-
+        print("Received response")
+        return embeddings[0]
     except Exception as e:
         print(f"An error occurred: {e}")
         return None
