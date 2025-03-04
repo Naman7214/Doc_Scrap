@@ -21,7 +21,7 @@ from questions import queries
 
 pc = Pinecone(api_key=os.getenv("PINECONE_API_KEY"))
 client = OpenAI(api_key=os.getenv("OPENAI_KEY"))
-reranker_model = CrossEncoder(model_name="BAAI/bge-reranker-v2-m3")
+# reranker_model = CrossEncoder(model_name="BAAI/bge-reranker-v2-m3")
 total_input_tokens = 0
 total_output_tokens= 0
 combined_llm_request_count = 0

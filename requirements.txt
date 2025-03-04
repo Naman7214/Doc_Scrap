@@ -4,3 +4,4 @@ crawl4ai
 google-genai
 python-dotenv
 fastembed
+sentence-transformers
