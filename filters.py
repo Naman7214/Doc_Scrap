@@ -103,3 +103,94 @@ json
 - If a version number is not explicitly mentioned, set "version": null.
 - The version should be of framework or sdk.
 """
+
+
+summary_links_prompt = """
+Prompt:
+"I have a list of URLs, and I need to filter the top 7 that provide substantial knowledge about the website and page content. The selected links should be those that contain valuable, structured, or informative content that can be used to generate a brief summary of the website and the specific page.
+
+The filtering criteria should prioritize:
+
+- **Informational Depth** – The page provides detailed insights, explanations, or structured knowledge rather than just navigation or promotional content.
+- **Context Relevance** – The content contributes to understanding what the website is about and its purpose.
+- **Unique Value** – It is not redundant compared to other links but adds a distinct perspective.
+- **Minimal Noise** – Avoids excessive ads, login restrictions, or irrelevant details.
+
+Return only the top 4 URLs that best meet these criteria in a structured JSON list format like this:
+
+
+ [
+        "https://example.com/page1",
+        "https://example.com/page2",
+        "https://example.com/page3",
+        "https://example.com/page4"
+    ]
+
+##NOTE##:
+The Selected links should be capable to provide enough information to generate following data:
+{
+	"source_urls": [],
+	"sdk_framework": "",
+	"category": "",
+	"chunk_id": "",
+	"supported_languages": [],
+	"versions": []
+}
+- "SDK/Framework_name": The **name** of the SDK or framework being described.
+- "source_url": The **original URL** from which the content was scraped (provided as input).
+- "sdk_framework": Binary classification:
+    - **SDK** → If the document primarily discusses an SDK (e.g., Python SDK, Node.js SDK).
+    - **Framework** → If the document primarily describes a development framework (e.g., TensorFlow, React, FastAPI).
+- "category": The **domain** the SDK or framework belongs to. Choose from the following:
+    - **AI**
+    - **Cloud**
+    - **Web**
+    - **Mobile**
+    - **Database**
+    - **Security**
+    - **DevOps**
+
+"""
+
+summary_prompt = """
+You are a text-processing AI that generates structured summaries from scraped technical documentation while preserving key information. The input consists of raw text from a single SDK or framework documentation. Your task is to create **a concise, meaningful summary** that captures essential details about the SDK, framework, or technology described in the source content.
+
+### Summary Guidelines:
+- **Concise & Informative**: The summary should be **brief yet detailed**, covering key features, functionality, and purpose.
+- **Preserve Key Concepts**: Retain important **technical details, capabilities, and use cases**.
+- **Avoid Redundancy**: Ensure that the summary adds value without unnecessary repetition.
+
+### Metadata Extraction:
+Since the entire request belongs to the **same SDK or framework**, extract and include the following metadata **once per request**:
+
+- **"source_urls"**: A list of URLs from which the content was scraped.
+- **"sdk_framework"**: Specifies whether the document is about an **SDK** or a **Framework**.
+- **"category"**: The domain of the SDK or framework, selected from:
+  - **AI**
+  - **Cloud**
+  - **Web**
+  - **Mobile**
+  - **Database**
+  - **Security**
+  - **DevOps**
+- **"supported_languages"**: List of programming languages supported by the SDK/framework (e.g., Python, JavaScript, Java). If not specified, set as an empty list.
+- **"versions"**: List of all versions mentioned in the documentation. If no version is found, set as an empty list.
+
+### **Expected Output Format (JSON Object for One SDK/Framework)**:
+
+```json
+[
+  {
+    "chunked_data": "Gemini API provides powerful AI capabilities for text and image processing. It allows developers to integrate generative AI into applications with pre-trained models. The API supports multimodal inputs and has endpoints for text completion, image recognition, and structured data extraction. Designed for high performance and scalability, it is suitable for production-ready AI applications.",
+    "metadata": {
+      "source_urls": [
+        "https://ai.google.dev/gemini-api/docs"
+      ],
+      "sdk_framework": "SDK",
+      "category": "AI",
+      "supported_languages": ["Python", "JavaScript"],
+      "versions": ["1.2.0", "1.3.0"]
+    }
+  }
+]
+"""
