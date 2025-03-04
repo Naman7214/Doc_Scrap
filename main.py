@@ -12,51 +12,55 @@ from chunker import process_file, process_summary_file
 from embedding import process_files
 from pinecone_utils import load_json_files_for_pinecone, ensure_index_exists, pine_chunks
 from urls import start_urls
+from playwright.async_api import async_playwright, Error
+
 max_llm_request_count = MAX_LLM_REQUEST_COUNT
 max_concurrent_tasks = MAX_CONCURRENT_TASKS
 
 async def main(start_urls: list[str], num_workers: int = 60):
     global results, llm_request_counts, count_locks
     
-    # Initialize locks more efficiently
-    # file_names = []
+    #Initialize locks more efficiently
+    file_names = []
     
-    # # Create tasks to get file names concurrently
-    # file_name_tasks = [get_file_name(url) for url in start_urls]
-    # file_names = await asyncio.gather(*file_name_tasks)
-    
-    # # Initialize tracking
-    # for i, url in enumerate(start_urls):
-    #     file_name = file_names[i]
-    #     count_locks[file_name] = asyncio.Lock()
-    #     results[file_name] = []
-    #     llm_request_counts[file_name] = 0
+    # Create tasks to get file names concurrently
+    file_name_tasks = [get_file_name(url) for url in start_urls]
+    file_names = await asyncio.gather(*file_name_tasks)
+    async with async_playwright() as playwright:
+        browser = await playwright.chromium.launch(headless= True)
+        # Initialize tracking
+        for i, url in enumerate(start_urls):
+            file_name = file_names[i]
+            count_locks[file_name] = asyncio.Lock()
+            results[file_name] = []
+            llm_request_counts[file_name] = 0
+            
+            # Add to queue
+            processed_urls.add(url)
+            await queue.put((url, 1, file_name))
+            print(f"Starting with base URL: {url} -> {file_name}")
         
-    #     # Add to queue
-    #     processed_urls.add(url)
-    #     await queue.put((url, 1, file_name))
-    #     print(f"Starting with base URL: {url} -> {file_name}")
+        # Create worker tasks
+        tasks = [asyncio.create_task(worker(i, browser)) for i in range(num_workers)]
+        
+        # Wait for all queue tasks to be processed
+        await queue.join()
+        
+        # Cancel all worker tasks
+        for task in tasks:
+            task.cancel()
+        
+        # Save results
+        await save_results(results)
+        
+        # Wait for tasks to be cancelled
+        await asyncio.gather(*tasks, return_exceptions=True)
+        await browser.close()
     
-    # # Create worker tasks
-    # tasks = [asyncio.create_task(worker(i)) for i in range(num_workers)]
-    
-    # # Wait for all queue tasks to be processed
-    # await queue.join()
-    
-    # # Cancel all worker tasks
-    # for task in tasks:
-    #     task.cancel()
-    
-    # # Save results
-    # await save_results(results)
-    
-    # # Wait for tasks to be cancelled
-    # await asyncio.gather(*tasks, return_exceptions=True)
-    
-    # # Print summary
-    # print("\n--- CRAWL SUMMARY ---")
-    # for file_name, count in llm_request_counts.items():
-    #     print(f"{file_name}: {count}/{max_llm_request_count} LLM calls, {len(results.get(file_name, []))} pages crawled")
+    # Print summary
+    print("\n--- CRAWL SUMMARY ---")
+    for file_name, count in llm_request_counts.items():
+        print(f"{file_name}: {count}/{max_llm_request_count} LLM calls, {len(results.get(file_name, []))} pages crawled")
     
     #================================================================================================
     #================================= CHUNKING ====================================================
