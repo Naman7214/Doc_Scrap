@@ -8,7 +8,6 @@ start_urls = [
     "https://lightgbm.readthedocs.io/en/latest/",
     "https://catboost.ai/docs/",
     "https://statsmodels.org/stable/index.html",
-    "https://pymc.io/projects/docs/en/latest/",
     "https://fastai1.fast.ai/",
     "https://spacy.io/api",
     "https://pandas.pydata.org/docs/",
@@ -33,7 +32,6 @@ start_urls = [
     "https://nextjs.org/docs",
     "https://nuxt.com/docs",
     "https://remix.run/docs",
-    "https://solidjs.com/docs",
     "https://alpinejs.dev/start",
     "https://htmx.org/docs/",
     "https://bootstrapdocs.com/",
@@ -67,29 +65,21 @@ start_urls = [
     "https://jestjs.io/docs/getting-started",
     "https://mochajs.org/",
     "https://selenium-python.readthedocs.io/",
-    "https://www.cypress.io/docs/",
     "https://testing-library.com/docs/",
-    "https://webdriver.io/docs/",
 
     # Security & DevOps
-    "https://www.owasp.org/index.php/Main_Page",
-    "https://trivy.dev/docs/",
     "https://docs.sonarqube.org/latest/",
     "https://prometheus.io/docs/",
     "https://docs.sentry.io/",
-    "https://datadoghq.com/docs/",
 
     # Networking & API Development
     "https://flask.palletsprojects.com/en/latest/",
     "https://fastapi.tiangolo.com/",
-    "https://nestjs.com/docs",
     "https://docs.spring.io/spring-framework/docs/current/reference/html/",
     "https://ktor.io/docs/",
     "https://hapi.dev/api/",
-    "https://adonisjs.com/docs",
 
     # Game Development
-    "https://docs.unrealengine.com/5.0/en-US/",
     "https://learn.microsoft.com/en-us/gaming/xbox-live/api-ref/",
     "https://developer.android.com/games/sdk",
     "https://developer.apple.com/games/"
