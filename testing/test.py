@@ -18,6 +18,7 @@ from embedding import get_embedding, get_sparse_embedding
 load_dotenv()
 from judge_prompt import judge_prompt
 from questions import queries
+from collections import Counter
 
 pc = Pinecone(api_key=os.getenv("PINECONE_API_KEY"))
 client = OpenAI(api_key=os.getenv("OPENAI_KEY"))
@@ -93,15 +94,17 @@ def log_usage(input_tokens, output_tokens):
 for query in queries:
     dense_vector = get_embedding(query)
     sparse_vector = get_sparse_embedding(query)
-    hdense, hsparse = hybrid_score_norm(dense_vector, sparse_vector, alpha=0.05)
+    hdense, hsparse = hybrid_score_norm(dense_vector, sparse_vector, alpha=1)
     # 1. Retrieve similar chunks from Pinecone based on the query
     result = index.query(
-        vector=dense_vector,
+        # vector=dense_vector,
+        vector = hdense,
         top_k=20,
         include_metadata=True,
         namespace="default",
         include_values=False,
         # sparse_vector = sparse_vector
+        sparse_vector = hsparse
     )
 
     retrieved_chunks = [
@@ -138,12 +141,21 @@ for query in queries:
     print(f"========={rating_text}")
     try:
         rating = int(rating_text)
+        # if rating == 1 or rating == 2:
+        #     print(f"Query is {query}\n")
+        #     print(f"Context is {context_str}\n")
     except ValueError:
         rating = 0  # Default to 0 if parsing fails
 
     ratings.append(rating)
     total_score += rating
 
+    # Count the occurrences of each rating
+    rating_counts = Counter(ratings)
+
+    # Print the count of each rating
+for rating, count in rating_counts.items():
+    print(f"Rating {rating}: {count} occurrences")
 # 5. Calculate and print the average relevancy score
 average_relevancy = total_score / len(queries) if queries else 0
 print("Average relevancy score:", average_relevancy)
