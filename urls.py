@@ -1,7 +1,6 @@
 start_urls = [
     # AI/ML & Data Science
     "https://pytorch.org/docs/stable/index.html",
-    "https://tensorflow.org/api_docs",
     "https://keras.io/api/",
     "https://huggingface.co/docs/transformers/index",
     "https://scikit-learn.org/stable/user_guide.html",
@@ -18,8 +17,6 @@ start_urls = [
     "https://plotly.com/python/",
 
     # Cloud & Backend Services
-    "https://cloud.google.com/docs/",
-    "https://learn.microsoft.com/en-us/azure/",
     "https://docs.digitalocean.com/",
     "https://developer.hashicorp.com/terraform/docs",
     "https://www.docker.com/docs/",
@@ -55,7 +52,6 @@ start_urls = [
     "https://weex.apache.org/en/references/",
 
     # Database & ORM
-    "https://dev.mysql.com/doc/",
     "https://www.mongodb.com/docs/",
     "https://cassandra.apache.org/doc/latest/",
     "https://neo4j.com/docs/",
@@ -70,7 +66,6 @@ start_urls = [
     # Testing & Automation
     "https://jestjs.io/docs/getting-started",
     "https://mochajs.org/",
-    "https://playwright.dev/docs/intro",
     "https://selenium-python.readthedocs.io/",
     "https://www.cypress.io/docs/",
     "https://testing-library.com/docs/",

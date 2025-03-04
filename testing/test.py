@@ -100,7 +100,8 @@ for query in queries:
         top_k=20,
         include_metadata=True,
         namespace="default",
-        include_values=False
+        include_values=False,
+        sparse_vector = sparse_vector
     )
 
     retrieved_chunks = [
