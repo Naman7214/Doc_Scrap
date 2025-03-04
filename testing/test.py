@@ -11,7 +11,7 @@ from sentence_transformers import CrossEncoder
 from dotenv import load_dotenv
 from openai import OpenAI
 from pinecone.grpc import PineconeGRPC as Pinecone
-
+import requests
 from config import INDEX_NAME, pc
 from embedding import get_embedding, get_sparse_embedding
 
@@ -50,12 +50,21 @@ def hybrid_score_norm(dense, sparse, alpha: float):
     return [v * alpha for v in dense], hs
 
 def rerank(query, chunks):
-    result = reranker_model.rank(query= query,
-                                 documents= chunks,
-                                 top_k=10,
-                                 return_documents= True)
-
-    reranked_chunks = [entry["text"] for entry in result]
+    url = 'https://api.jina.ai/v1/rerank'
+    headers = {
+    'Content-Type': 'application/json',
+    'Authorization': f'Bearer {os.getenv("JINA_API_KEY")}'
+    }
+    
+    data = {
+        "model": "jina-reranker-v2-base-multilingual",
+        "query": query,
+        'documents' : chunks,
+        'top_n' : 10
+    }
+    response = requests.post(url, headers=headers, json=data)
+    
+    reranked_chunks = [x["document"]["text"] for x in  response.json()['results']]
 
     return reranked_chunks
 def log_usage(input_tokens, output_tokens):
