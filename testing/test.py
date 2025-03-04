@@ -1,6 +1,6 @@
 import os
 import sys
-
+import json
 # Add the parent directory to sys.path
 parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if parent_dir not in sys.path:
@@ -22,6 +22,11 @@ from questions import queries
 pc = Pinecone(api_key=os.getenv("PINECONE_API_KEY"))
 client = OpenAI(api_key=os.getenv("OPENAI_KEY"))
 reranker_model = CrossEncoder(model_name="BAAI/bge-reranker-v2-m3")
+total_input_tokens = 0
+total_output_tokens= 0
+combined_llm_request_count = 0
+total_score = 0
+ratings = []
 # Connect to the Pinecone index that holds the document chunks
 index_name = INDEX_NAME
 index = pc.Index(index_name)
@@ -53,10 +58,27 @@ def rerank(query, chunks):
     reranked_chunks = [entry["text"] for entry in result]
 
     return reranked_chunks
+def log_usage(input_tokens, output_tokens):
+    global total_input_tokens, total_output_tokens, combined_llm_request_count
+    
+    
+    total_input_tokens += input_tokens
+    total_output_tokens += output_tokens
+    combined_llm_request_count += combined_llm_request_count
+        
+        # Prepare log data
+    log_data = {
+            "request_count": combined_llm_request_count,
+            "input_tokens": input_tokens,
+            "output_tokens": output_tokens,
+            "total_input_tokens": total_input_tokens,
+            "total_output_tokens": total_output_tokens,
+        }
+    
+    with open("llm_usage_log_for_test.json", mode="a") as log_file:
+        log_file.write(json.dumps(log_data) + "\n")
 
 
-total_score = 0
-ratings = []
 
 # Iterate over each query to retrieve, rerank, and judge relevancy
 for query in queries:
@@ -96,6 +118,10 @@ for query in queries:
         max_tokens=5,
         temperature=0.0,
     )
+    usage = response.usage
+    input_tokens = usage.prompt_tokens
+    output_tokens = usage.completion_tokens
+    log_usage(input_tokens, output_tokens)
 
     # Extract the rating (expecting a number between 1 and 5)
     rating_text = response.choices[0].message.content.strip()
