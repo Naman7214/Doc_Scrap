@@ -18,69 +18,69 @@ max_concurrent_tasks = MAX_CONCURRENT_TASKS
 async def main(start_urls: list[str], num_workers: int = 60):
     global results, llm_request_counts, count_locks
     
-    # # Initialize locks more efficiently
-    # file_names = []
+    # Initialize locks more efficiently
+    file_names = []
     
-    # # Create tasks to get file names concurrently
-    # file_name_tasks = [get_file_name(url) for url in start_urls]
-    # file_names = await asyncio.gather(*file_name_tasks)
+    # Create tasks to get file names concurrently
+    file_name_tasks = [get_file_name(url) for url in start_urls]
+    file_names = await asyncio.gather(*file_name_tasks)
     
-    # # Initialize tracking
-    # for i, url in enumerate(start_urls):
-    #     file_name = file_names[i]
-    #     count_locks[file_name] = asyncio.Lock()
-    #     results[file_name] = []
-    #     llm_request_counts[file_name] = 0
+    # Initialize tracking
+    for i, url in enumerate(start_urls):
+        file_name = file_names[i]
+        count_locks[file_name] = asyncio.Lock()
+        results[file_name] = []
+        llm_request_counts[file_name] = 0
         
-    #     # Add to queue
-    #     processed_urls.add(url)
-    #     await queue.put((url, 1, file_name))
-    #     print(f"Starting with base URL: {url} -> {file_name}")
+        # Add to queue
+        processed_urls.add(url)
+        await queue.put((url, 1, file_name))
+        print(f"Starting with base URL: {url} -> {file_name}")
     
-    # # Create worker tasks
-    # tasks = [asyncio.create_task(worker(i)) for i in range(num_workers)]
+    # Create worker tasks
+    tasks = [asyncio.create_task(worker(i)) for i in range(num_workers)]
     
-    # # Wait for all queue tasks to be processed
-    # await queue.join()
+    # Wait for all queue tasks to be processed
+    await queue.join()
     
-    # # Cancel all worker tasks
-    # for task in tasks:
-    #     task.cancel()
+    # Cancel all worker tasks
+    for task in tasks:
+        task.cancel()
     
-    # # Save results
-    # await save_results(results)
+    # Save results
+    await save_results(results)
     
-    # # Wait for tasks to be cancelled
-    # await asyncio.gather(*tasks, return_exceptions=True)
+    # Wait for tasks to be cancelled
+    await asyncio.gather(*tasks, return_exceptions=True)
     
-    # # Print summary
-    # print("\n--- CRAWL SUMMARY ---")
-    # for file_name, count in llm_request_counts.items():
-    #     print(f"{file_name}: {count}/{max_llm_request_count} LLM calls, {len(results.get(file_name, []))} pages crawled")
+    # Print summary
+    print("\n--- CRAWL SUMMARY ---")
+    for file_name, count in llm_request_counts.items():
+        print(f"{file_name}: {count}/{max_llm_request_count} LLM calls, {len(results.get(file_name, []))} pages crawled")
     
-    # #================================================================================================
-    # #================================= CHUNKING ====================================================
-    # #================================================================================================
+    #================================================================================================
+    #================================= CHUNKING ====================================================
+    #================================================================================================
 
 
 
-    # json_files = [os.path.join("results", file) for file in os.listdir("results")]
+    json_files = [os.path.join("results", file) for file in os.listdir("results")]
     
-    # all_chunks = []
-    # semaphore = asyncio.Semaphore(CHUNK_SEMAPHORE_LIMIT)
+    all_chunks = []
+    semaphore = asyncio.Semaphore(CHUNK_SEMAPHORE_LIMIT)
     
-    # for file in json_files:
-    #     chunks = await process_file(file, semaphore)
-    #     all_chunks.extend(chunks)
+    for file in json_files:
+        chunks = await process_file(file, semaphore)
+        all_chunks.extend(chunks)
     
-    # chunk_dir = os.path.join('json_chunks')
-    # os.makedirs(chunk_dir, exist_ok=True)
-    # chunk_file = os.path.join(chunk_dir, 'all_chunks.json')
+    chunk_dir = os.path.join('json_chunks')
+    os.makedirs(chunk_dir, exist_ok=True)
+    chunk_file = os.path.join(chunk_dir, 'all_chunks.json')
     
-    # async with aiofiles.open(chunk_file, mode="w") as chunk_f:
-    #     await chunk_f.write(json.dumps(all_chunks, indent=2))
+    async with aiofiles.open(chunk_file, mode="w") as chunk_f:
+        await chunk_f.write(json.dumps(all_chunks, indent=2))
     
-    # print("Saved all chunks to", chunk_file)
+    print("Saved all chunks to", chunk_file)
 
 
 

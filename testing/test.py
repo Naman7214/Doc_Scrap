@@ -7,7 +7,7 @@ if parent_dir not in sys.path:
     sys.path.insert(0, parent_dir)
 
 import os
-
+from sentence_transformers import CrossEncoder
 from dotenv import load_dotenv
 from openai import OpenAI
 from pinecone.grpc import PineconeGRPC as Pinecone
@@ -21,23 +21,36 @@ from questions import queries
 
 pc = Pinecone(api_key=os.getenv("PINECONE_API_KEY"))
 client = OpenAI(api_key=os.getenv("OPENAI_KEY"))
-
+reranker_model = CrossEncoder(model_name="BAAI/bge-reranker-v2-m3")
 # Connect to the Pinecone index that holds the document chunks
 index_name = INDEX_NAME
 index = pc.Index(index_name)
 
+def hybrid_score_norm(dense, sparse, alpha: float):
+    """Hybrid score using a convex combination
+
+    alpha * dense + (1 - alpha) * sparse
+
+    Args:
+        dense: Array of floats representing
+        sparse: a dict of `indices` and `values`
+        alpha: scale between 0 and 1
+    """
+    if alpha < 0 or alpha > 1:
+        raise ValueError("Alpha must be between 0 and 1")
+    hs = {
+        'indices': sparse['indices'],
+        'values':  [v * (1 - alpha) for v in sparse['values']]
+    }
+    return [v * alpha for v in dense], hs
 
 def rerank(query, chunks):
-    result = pc.inference.rerank(
-        model="bge-reranker-v2-m3",
-        query=query,
-        documents=chunks,
-        top_n=10,
-        return_documents=True,
-        parameters={"truncate": "END"},
-    )
+    result = reranker_model.rank(query= query,
+                                 documents= chunks,
+                                 top_k=10,
+                                 return_documents= True)
 
-    reranked_chunks = [entry["document"]["text"] for entry in result.data]
+    reranked_chunks = [entry["text"] for entry in result]
 
     return reranked_chunks
 
@@ -47,15 +60,16 @@ ratings = []
 
 # Iterate over each query to retrieve, rerank, and judge relevancy
 for query in queries:
-    query_embedding = get_embedding(text=query)
+    dense_vector = get_embedding(query)
+    sparse_vector = get_sparse_embedding(query)
+    hdense, hsparse = hybrid_score_norm(dense_vector, sparse_vector, alpha=0.05)
     # 1. Retrieve similar chunks from Pinecone based on the query
     result = index.query(
-        vector=query_embedding,
+        vector=dense_vector,
         top_k=20,
         include_metadata=True,
         namespace="default",
-        include_values=False,
-        sparse_vector=get_sparse_embedding(text= query)
+        include_values=False
     )
 
     retrieved_chunks = [
