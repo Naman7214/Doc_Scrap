@@ -8,7 +8,7 @@ from config import (
 )
 from crawler import worker, queue, results, processed_urls,get_file_name, save_results
 from crawler import llm_request_counts, count_locks
-from chunker import process_file
+from chunker import process_file, process_summary_file
 from embedding import process_files
 from pinecone_utils import load_json_files_for_pinecone, ensure_index_exists, pine_chunks
 from urls import start_urls
@@ -19,44 +19,44 @@ async def main(start_urls: list[str], num_workers: int = 60):
     global results, llm_request_counts, count_locks
     
     # Initialize locks more efficiently
-    file_names = []
+    # file_names = []
     
-    # Create tasks to get file names concurrently
-    file_name_tasks = [get_file_name(url) for url in start_urls]
-    file_names = await asyncio.gather(*file_name_tasks)
+    # # Create tasks to get file names concurrently
+    # file_name_tasks = [get_file_name(url) for url in start_urls]
+    # file_names = await asyncio.gather(*file_name_tasks)
     
-    # Initialize tracking
-    for i, url in enumerate(start_urls):
-        file_name = file_names[i]
-        count_locks[file_name] = asyncio.Lock()
-        results[file_name] = []
-        llm_request_counts[file_name] = 0
+    # # Initialize tracking
+    # for i, url in enumerate(start_urls):
+    #     file_name = file_names[i]
+    #     count_locks[file_name] = asyncio.Lock()
+    #     results[file_name] = []
+    #     llm_request_counts[file_name] = 0
         
-        # Add to queue
-        processed_urls.add(url)
-        await queue.put((url, 1, file_name))
-        print(f"Starting with base URL: {url} -> {file_name}")
+    #     # Add to queue
+    #     processed_urls.add(url)
+    #     await queue.put((url, 1, file_name))
+    #     print(f"Starting with base URL: {url} -> {file_name}")
     
-    # Create worker tasks
-    tasks = [asyncio.create_task(worker(i)) for i in range(num_workers)]
+    # # Create worker tasks
+    # tasks = [asyncio.create_task(worker(i)) for i in range(num_workers)]
     
-    # Wait for all queue tasks to be processed
-    await queue.join()
+    # # Wait for all queue tasks to be processed
+    # await queue.join()
     
-    # Cancel all worker tasks
-    for task in tasks:
-        task.cancel()
+    # # Cancel all worker tasks
+    # for task in tasks:
+    #     task.cancel()
     
-    # Save results
-    await save_results(results)
+    # # Save results
+    # await save_results(results)
     
-    # Wait for tasks to be cancelled
-    await asyncio.gather(*tasks, return_exceptions=True)
+    # # Wait for tasks to be cancelled
+    # await asyncio.gather(*tasks, return_exceptions=True)
     
-    # Print summary
-    print("\n--- CRAWL SUMMARY ---")
-    for file_name, count in llm_request_counts.items():
-        print(f"{file_name}: {count}/{max_llm_request_count} LLM calls, {len(results.get(file_name, []))} pages crawled")
+    # # Print summary
+    # print("\n--- CRAWL SUMMARY ---")
+    # for file_name, count in llm_request_counts.items():
+    #     print(f"{file_name}: {count}/{max_llm_request_count} LLM calls, {len(results.get(file_name, []))} pages crawled")
     
     #================================================================================================
     #================================= CHUNKING ====================================================
@@ -72,6 +72,8 @@ async def main(start_urls: list[str], num_workers: int = 60):
     for file in json_files:
         chunks = await process_file(file, semaphore)
         all_chunks.extend(chunks)
+        summary_chunks = await process_summary_file(file)
+        all_chunks.extend(summary_chunks)
     
     chunk_dir = os.path.join('json_chunks')
     os.makedirs(chunk_dir, exist_ok=True)
