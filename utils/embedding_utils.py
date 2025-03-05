@@ -1,5 +1,6 @@
-from fastembed import TextEmbedding
 import types
+
+from fastembed import TextEmbedding
 from pinecone_text.sparse import BM25Encoder
 
 model = TextEmbedding("BAAI/bge-base-en-v1.5")
@@ -9,9 +10,10 @@ bm25 = BM25Encoder().default()
 def get_sparse_embedding(text):
     doc_sparse_vector = bm25.encode_documents(text)
     return {
-        "indices": doc_sparse_vector["indices"],  
-        "values": doc_sparse_vector["values"]
+        "indices": doc_sparse_vector["indices"],
+        "values": doc_sparse_vector["values"],
     }
+
 
 def get_embedding(text):
     global request_count
@@ -23,13 +25,15 @@ def get_embedding(text):
         # If raw is a generator, exhaust it.
         if isinstance(raw, types.GeneratorType):
             raw = list(raw)
-        
+
         # Now, if raw is a numpy array, convert it to a list.
-        if hasattr(raw, 'tolist'):
+        if hasattr(raw, "tolist"):
             embeddings = raw.tolist()
         # Otherwise, if it's already a list, check each element.
         elif isinstance(raw, list):
-            embeddings = [e.tolist() if hasattr(e, 'tolist') else e for e in raw]
+            embeddings = [
+                e.tolist() if hasattr(e, "tolist") else e for e in raw
+            ]
         else:
             embeddings = raw
 

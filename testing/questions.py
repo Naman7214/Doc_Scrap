@@ -66,5 +66,5 @@ queries = [
     "Hapi: define routes example",
     "Xbox Live: authentication example",
     "Android: integrate Google Play Games services",
-    "iOS: implement Game Center"
+    "iOS: implement Game Center",
 ]

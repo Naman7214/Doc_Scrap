@@ -1,10 +1,12 @@
 import asyncio
 import concurrent.futures
 import json
-from config import g_client
+
 from utils.embedding_utils import get_embedding, get_sparse_embedding
 
 request_count = 0
+
+
 async def get_embedding_concurrently(text, pool, semaphore):
     async with semaphore:
         loop = asyncio.get_event_loop()
@@ -24,7 +26,11 @@ async def embed_process_file(source_file, pool, semaphore):
     tasks = []
     for item in data:
         chunk_text = item["chunked_data"]
-        tasks.append(asyncio.create_task(get_embedding_concurrently(chunk_text, pool, semaphore)))
+        tasks.append(
+            asyncio.create_task(
+                get_embedding_concurrently(chunk_text, pool, semaphore)
+            )
+        )
 
     embeddings = await asyncio.gather(*tasks)
 
@@ -32,13 +38,14 @@ async def embed_process_file(source_file, pool, semaphore):
         item["embedding"] = embedding
         item["sparse_values"] = get_sparse_embedding(item["chunked_data"])
         embedded_count += 1
-        print(f"Embedded {embedded_count}/{total_chunks} chunks in {source_file}")
+        print(
+            f"Embedded {embedded_count}/{total_chunks} chunks in {source_file}"
+        )
 
     with open(source_file, "w", encoding="utf-8") as file:
         json.dump(data, file, indent=4)
 
     print(f"Embeddings added and saved successfully for {source_file}.")
-
 
 
 async def process_files(file_list, max_concurrent_tasks):

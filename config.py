@@ -1,10 +1,11 @@
 import os
+
 from dotenv import load_dotenv
-from openai import AsyncOpenAI
 from google import genai
+from openai import AsyncOpenAI
 from pinecone.grpc import PineconeGRPC as Pinecone
 
-load_dotenv()  
+load_dotenv()
 
 OPENAI_API_KEY = os.getenv("OPENAI_KEY")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
@@ -36,8 +37,35 @@ SELECTOR_HIERARCHY = [
 ]
 
 PROGRAMMING_LANGUAGES = {
-    "http", "python", "javascript", "typescript", "rust", "java", "csharp", 
-    "go", "curl", "json", "c#", "csharp", "node.js", "node", "npm", "yarn", "pnpm", "react", 
-    "angular", "vue", "svelte", "sql", "php", "ruby", "twilio-cli","node","cpp",".net","stripe-cli","scala","r"
+    "http",
+    "python",
+    "javascript",
+    "typescript",
+    "rust",
+    "java",
+    "csharp",
+    "go",
+    "curl",
+    "json",
+    "c#",
+    "csharp",
+    "node.js",
+    "node",
+    "npm",
+    "yarn",
+    "pnpm",
+    "react",
+    "angular",
+    "vue",
+    "svelte",
+    "sql",
+    "php",
+    "ruby",
+    "twilio-cli",
+    "node",
+    "cpp",
+    ".net",
+    "stripe-cli",
+    "scala",
+    "r",
 }
-

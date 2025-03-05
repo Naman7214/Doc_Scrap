@@ -87,6 +87,5 @@
 
 start_urls = [
     "https://docs.pinecone.io/guides/get-started/overview",
-    "https://console.groq.com/docs/overview"
+    "https://console.groq.com/docs/overview",
 ]
-
