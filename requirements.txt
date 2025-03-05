@@ -6,3 +6,7 @@ python-dotenv
 fastembed
 sentence-transformers
 pinecone_text
+black
+autoflake
+isort
+vulture
