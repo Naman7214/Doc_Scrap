@@ -6,6 +6,7 @@ from pinecone_text.sparse import BM25Encoder
 model = TextEmbedding("BAAI/bge-base-en-v1.5")
 bm25 = BM25Encoder().default()
 
+request_count = 0
 
 def get_sparse_embedding(text):
     doc_sparse_vector = bm25.encode_documents(text)
