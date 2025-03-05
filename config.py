@@ -13,10 +13,19 @@ PINECONE_API_KEY = os.getenv("PINECONE_API_KEY")
 INDEX_NAME = os.getenv("INDEX_NAME", "document-index")
 
 DIMENSION = 768
+# Maximum depth for crawling
 MAX_DEPTH = 4
+
+# Maximum number of requests to the LLM
 MAX_LLM_REQUEST_COUNT = 50
+
+# Semaphore limit for chunk processing
 CHUNK_SEMAPHORE_LIMIT = 30
+
+# Maximum number of concurrent tasks for embeddings
 MAX_CONCURRENT_TASKS = 40
+
+# Maximum number of concurrent clicks per page
 MAX_CONCURRENT_CLICKS = 5
 
 client = AsyncOpenAI(api_key=OPENAI_API_KEY)
