@@ -62,7 +62,6 @@ async def main(start_urls: list[str], num_workers: int = 60):
     print("\n--- CRAWL SUMMARY ---")
     for file_name, count in llm_request_counts.items():
         print(f"{file_name}: {count}/{max_llm_request_count} LLM calls, {len(results.get(file_name, []))} pages crawled")
-    2/0
     #================================================================================================
     #================================= CHUNKING ====================================================
     #================================================================================================
