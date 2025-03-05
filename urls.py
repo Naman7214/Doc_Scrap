@@ -86,6 +86,7 @@
 # ]
 
 start_urls = [
-    "https://docs.pinecone.io/guides/indexes/create-an-index"
+    "https://docs.pinecone.io/guides/get-started/overview",
+    "https://console.groq.com/docs/overview"
 ]
 

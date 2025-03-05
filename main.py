@@ -11,7 +11,7 @@ from utils.crawler_utils import get_file_name ,save_results
 from crawler import llm_request_counts, count_locks
 from chunker import process_file, process_summary_file
 from embedding import process_files
-from pinecone_utils import load_json_files_for_pinecone, ensure_index_exists, pine_chunks
+from utils.pinecone_utils import load_json_files_for_pinecone, ensure_index_exists, pine_chunks
 from urls import start_urls
 from playwright.async_api import async_playwright, Error
 
