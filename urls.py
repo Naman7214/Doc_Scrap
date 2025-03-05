@@ -86,6 +86,16 @@
 # ]
 
 start_urls = [
-    "https://docs.pinecone.io/guides/get-started/overview",
-    "https://console.groq.com/docs/overview",
+    # "https://graphql.org/learn/",
+    "https://docs.anthropic.com/",
+    # "https://docs.cohere.com/reference/about",
+    # "https://weaviate.io/developers/weaviate",
+    # "https://docs.haystack.deepset.ai/",
+    # "https://docs.stripe.com/",
+    # "https://www.twilio.com/docs",
+    # "https://docs.databricks.com/aws/en/",
+    # "https://adonisjs.com/docs",
+    # "https://express-validator.github.io/docs/",
+    # "https://docs.jax.dev/en/latest/",
+    # "https://dvc.org/doc",
 ]

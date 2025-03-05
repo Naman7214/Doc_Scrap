@@ -13,7 +13,7 @@ from config import (
     MAX_LLM_REQUEST_COUNT,
     pc,
 )
-from crawler import processed_urls, queue, worker
+from crawler import processed_urls, queue, worker, llm_request_counts, count_locks, results
 from embedding import process_files
 from urls import start_urls
 from utils.crawler_utils import get_file_name, save_results

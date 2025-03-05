@@ -4,6 +4,7 @@ import json
 
 from utils.embedding_utils import get_embedding, get_sparse_embedding
 
+request_count = 0
 
 
 async def get_embedding_concurrently(text, pool, semaphore):
