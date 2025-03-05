@@ -78,7 +78,8 @@ async def handle_element_and_extract(page, element, text, seen_code_blocks, shou
                 if code_text and code_text not in seen_code_blocks:
                     seen_code_blocks.add(code_text)
                     snippets.append(code_text)
-            except Error:
+            except Exception as e:
+                print(e)
                 continue
         return snippets, text
     except Exception as e:
