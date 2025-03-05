@@ -15,15 +15,13 @@ from config import (
 import aiofiles
 import json
 import os
-
+from utils.crawler_utils import  remove_fragment, filter_urls_by_domain, log_usage, merge_content, clean_gpt_output
 queue = asyncio.Queue()
 results = {}
 processed_urls = set()
 llm_request_counts = {}
 count_locks = {}
-log_lock = asyncio.Lock()
-total_input_tokens = 0
-total_output_tokens = 0
+
 
 max_llm_request_count = MAX_LLM_REQUEST_COUNT
 # Adding the selector hierarchy from the second code
@@ -51,77 +49,41 @@ MAX_TABS_PER_CONTEXT = 5
 # Maximum concurrent click operations per page
 MAX_CONCURRENT_CLICKS = 5
 
-def merge_content(markdown_content, hidden_snippets):
-    """Merges extracted markdown content with hidden code snippets."""
-    # Regular expression to identify code blocks (```language ... ```)
-    code_block_pattern = re.compile(r"```(\w+)\n(.*?)```", re.DOTALL)
 
-    merged_content = ""
-    last_end = 0
-    inserted_languages = set()
-
-    for match in code_block_pattern.finditer(markdown_content):
-        language = match.group(1).lower()
-        code = match.group(2)
-
-        # Append the markdown content before the current code block
-        merged_content += markdown_content[last_end:match.start()]
-        
-        # Append the default extracted code
-        merged_content += f"```{language}\n{code}\n```\n"
-
-        # Append hidden snippets for other languages after the default language snippet
-        if language in hidden_snippets:
-            for alt_code in hidden_snippets.pop(language, []):
-                merged_content += f"\n```{language}\n{alt_code}\n```\n"
-            inserted_languages.add(language)
-
-        last_end = match.end()
-
-    # Append any remaining content
-    merged_content += markdown_content[last_end:]
-
-    # If there are remaining hidden snippets, append them at the end
-    if hidden_snippets:
-        merged_content += "\n\n# Additional Code Snippets\n"
-        for lang, snippets in hidden_snippets.items():
-            if lang not in inserted_languages:
-                for snippet in snippets:
-                    merged_content += f"\n```{lang}\n{snippet}\n```\n"
-
-    return merged_content
-
-async def click_element_and_extract(page, element, text, seen_code_blocks):
-    """Click an element and extract code after clicking."""
+async def handle_element_and_extract(page, element, text, seen_code_blocks, should_click=True):
+    """
+    Handle an element (click if needed) and extract code snippets from the page.
+    
+    :param page: The page object.
+    :param element: The element to interact with.
+    :param text: The text associated with the element (e.g., programming language name).
+    :param seen_code_blocks: A set to track already processed code snippets.
+    :param should_click: Whether to click the element before extracting code.
+    :return: A tuple of (snippets, text).
+    """
     snippets = []
     try:
-        if not await element.is_visible():
-            return [], text
-            
-        element_text = await element.inner_text(timeout=3000)
-        element_text = element_text.strip().lower()
-
-        if element_text in PROGRAMMING_LANGUAGES:
-            print(f"Clicking: {element_text} in element")
+        # Click the element if required
+        if should_click:
+            print(f"Clicking: {text} in element")
             await element.click()
             await asyncio.sleep(0.5)  # Reduced sleep time
-            
-            # Extract code blocks after clicking
-            code_blocks = await page.locator("pre code, pre, code, div[class*='bg-'] pre code, div[class*='bg-'] pre").all()
-            for code_block in code_blocks:
-                try:
-                    code_text = await code_block.inner_text(timeout=3000)
-                    code_text = code_text.strip()
-                    if code_text and code_text not in seen_code_blocks:
-                        seen_code_blocks.add(code_text)
-                        snippets.append(code_text)
-                except Error:
-                    continue
-            return snippets, element_text
+
+        # Extract code blocks after the action
+        code_blocks = await page.locator("pre code, pre, code, div[class*='bg-'] pre code, div[class*='bg-'] pre").all()
+        for code_block in code_blocks:
+            try:
+                code_text = await code_block.inner_text(timeout=3000)
+                code_text = code_text.strip()
+                if code_text and code_text not in seen_code_blocks:
+                    seen_code_blocks.add(code_text)
+                    snippets.append(code_text)
+            except Error:
+                continue
+        return snippets, text
     except Exception as e:
         print(f"Skipping interactive element due to error: {e}")
-    
-    return [], text
+        return [], text
 
 async def extract_hidden_snippets(url, browser):
     """Extracts hidden code snippets by clicking on tabs and handling non-interactive content."""
@@ -132,100 +94,53 @@ async def extract_hidden_snippets(url, browser):
     page = await context.new_page()
     await page.goto(url  = url, timeout = 45000)
     
-    # Function to handle dropdown-based content extraction
-    async def handle_dropdown_based_content(page):
-        dropdown_elements = await page.locator("select").all()
-        for dropdown in dropdown_elements:
-            try:
-                options = await dropdown.locator("option").all()
-                for option in options:
-                    option_text = await option.inner_text()
-                    option_text = option_text.strip().lower()
-                    if option_text in PROGRAMMING_LANGUAGES:
-                        await dropdown.select_option(value=await option.get_attribute("value"))
-                        await asyncio.sleep(0.5)  # Wait for content to load
-
-                        # Extract code blocks after selecting the dropdown option
-                        code_blocks = await page.locator("pre code, pre, code, div[class*='bg-'] pre code, div[class*='bg-'] pre").all()
-                        for code_block in code_blocks:
-                            try:
-                                code_text = await code_block.inner_text(timeout=3000)
-                                code_text = code_text.strip()
-                                if code_text and code_text not in seen_code_blocks:
-                                    seen_code_blocks.add(code_text)
-                                    code_snippets.setdefault(option_text, []).append(code_text)
-                            except Error:
-                                continue
-            except Exception as e:
-                print(f"Skipping dropdown due to error: {e}")
-
-    # Handle dropdown-based content
-    await handle_dropdown_based_content(page)
-
-    async def handle_tab_based_content(page):
-        tab_elements = await page.locator("button[role='tab'], div[role='tab']").all()
-        for tab in tab_elements:
-            try:
-                tab_text = await tab.inner_text()
-                tab_text = tab_text.strip().lower()
-                if tab_text in PROGRAMMING_LANGUAGES:
-                    print(f"Clicking tab: {tab_text} from {url}")
-                    await tab.click()
-                    await asyncio.sleep(0.5)  # Wait for content to load
-
-                    # Extract code blocks after clicking the tab
-                    code_blocks = await page.locator("pre code, pre, code, div[class*='bg-'] pre code, div[class*='bg-'] pre").all()
-                    for code_block in code_blocks:
-                        try:
-                            code_text = await code_block.inner_text(timeout=3000)
-                            code_text = code_text.strip()
-                            if code_text and code_text not in seen_code_blocks:
-                                seen_code_blocks.add(code_text)
-                                code_snippets.setdefault(tab_text, []).append(code_text)
-                        except Error:
-                            continue
-            except Exception as e:
-                print(f"Skipping tab due to error: {e}")
-
-    # Handle tab-based content
-    await handle_tab_based_content(page)
-
-
     # Step 1: Use improved selector hierarchy to find relevant elements
     for selector in SELECTOR_HIERARCHY:
         try:
             elements = await page.locator(selector).all()
             if not elements:
                 continue
-            
-            filtered_elements = []
+
+            # Process elements concurrently
+            click_tasks = []
             for element in elements:
+                # Skip if the element is not visible
                 if not await element.is_visible():
                     continue
 
-                text = await element.inner_text(timeout=3000)
-                text = text.strip().lower()
+                # Handle select elements differently
+                if selector == "select":
+                    # Locate the option elements within the select
+                    options = await element.locator("option").all()
+                    for option in options:
+                        option_text = await option.inner_text(timeout=3000)
+                        option_text = option_text.strip().lower()
+                        if option_text in PROGRAMMING_LANGUAGES:
+                            # Use select_option instead of clicking
+                            value = await option.get_attribute("value")
+                            await element.select_option(value=value)
+                            # Extract code after selecting the option
+                            click_tasks.append(handle_element_and_extract(page, element, option_text, seen_code_blocks, should_click=False))
+                else:
+                    # For non-select elements, check if the element text is in PROGRAMMING_LANGUAGES
+                    element_text = await element.inner_text(timeout=3000)
+                    element_text = element_text.strip().lower()
+                    if element_text in PROGRAMMING_LANGUAGES:
+                        # Proceed with the click logic
+                        click_tasks.append(handle_element_and_extract(page, element, element_text, seen_code_blocks, should_click=True))
 
-                if text in PROGRAMMING_LANGUAGES:
-                    print(f"Found relevant element: {text} in {selector} on {url}")
-                    filtered_elements.append(element)  
-            # Process elements concurrently
-            click_tasks = []
-            for element in filtered_elements:
-                click_tasks.append(click_element_and_extract(page, element, "", seen_code_blocks))
-            
             # Execute click operations concurrently with a limit
             results = []
             for i in range(0, len(click_tasks), MAX_CONCURRENT_CLICKS):
                 batch = click_tasks[i:i+MAX_CONCURRENT_CLICKS]
                 batch_results = await asyncio.gather(*batch)
                 results.extend(batch_results)
-            
+
             # Process results
             for snippets, lang in results:
                 if snippets and lang in PROGRAMMING_LANGUAGES:
                     code_snippets.setdefault(lang, []).extend(snippets)
-                    
+
         except Exception as e:
             print(f"Error with selector {selector}: {e}")
 
@@ -256,69 +171,10 @@ async def extract_hidden_snippets(url, browser):
     return code_snippets
 
 
-async def log_usage(start_time, end_time, input_tokens, output_tokens):
-    """Log token usage asynchronously but with minimal locking"""
-    global total_input_tokens, total_output_tokens
-    
-    # Update counters atomically
-    async with log_lock:
-        total_input_tokens += input_tokens
-        total_output_tokens += output_tokens
-        combined_llm_request_count = sum(llm_request_counts.values())
-        
-        # Prepare log data
-        log_data = {
-            "timestamp": time.time(),
-            "request_count": combined_llm_request_count,
-            "input_tokens": input_tokens,
-            "output_tokens": output_tokens,
-            "total_input_tokens": total_input_tokens,
-            "total_output_tokens": total_output_tokens,
-            "time_taken": end_time - start_time,
-        }
-    
-    # Write to file outside the lock
-    async with aiofiles.open("llm_usage_log.json", mode="a") as log_file:
-        await log_file.write(json.dumps(log_data) + "\n")
-
-async def save_results(results: dict, directory: str = "results"):
-    """
-    Saves the given results in separate JSON files inside the specified directory.
-    Each key in the results dictionary becomes a JSON filename.
-    """
-    os.makedirs(directory, exist_ok=True)
-    
-    # Create tasks for all file saves to run in parallel
-    save_tasks = []
-    for filename, data in results.items():
-        file_path = os.path.join(directory, f"{filename}.json")
-        
-        async def save_file(path, content):
-            async with aiofiles.open(path, "w", encoding="utf-8") as f:
-                await f.write(json.dumps(content, ensure_ascii=False, indent=2))
-            print(f"Saved: {path}")
-            
-        save_tasks.append(save_file(file_path, data))
-    
-    # Run all save tasks concurrently
-    await asyncio.gather(*save_tasks)
-    
-
-def clean_gpt_output(response_text):
-    """Cleans GPT output by removing code block markers and ensuring a valid list format."""
-    response_text = re.sub(r"```[a-zA-Z]*", "", response_text).strip("`").strip()
-    try:
-        return eval(response_text)
-    except:
-        # Fallback if the output isn't a valid Python list
-        print(f"Warning: Could not parse GPT output - {response_text}")
-        return []
-    
 async def should_process_url(file_name):
     """Check if we should process more URLs for this file_name"""
     async with count_locks.get(file_name, asyncio.Lock()):
         return llm_request_counts.get(file_name, 0) < max_llm_request_count
-
 
 async def filter_links_gpt(links, file_name):
     """Filter links using GPT-4o-mini asynchronously with minimal locking."""
@@ -353,7 +209,7 @@ async def filter_links_gpt(links, file_name):
         output_tokens = usage.completion_tokens
         
         # Log usage asynchronously without blocking
-        asyncio.create_task(log_usage(start_time, end_time, input_tokens, output_tokens))
+        asyncio.create_task(log_usage(start_time, end_time, input_tokens, output_tokens, llm_request_counts))
         
         filtered_links = response.choices[0].message.content.strip()
         return clean_gpt_output(filtered_links)
@@ -364,18 +220,6 @@ async def filter_links_gpt(links, file_name):
         async with count_locks.get(file_name, asyncio.Lock()):
             llm_request_counts[file_name] = max(0, llm_request_counts.get(file_name, 0) - 1)
         return []
-
-
-def remove_fragment(url):
-    """Removes fragment identifiers (#) from URLs."""
-    match = re.match(r"(https?://[^\s#]+)", url)
-    return match.group(1) if match else url
-
-def filter_urls_by_domain(base_url, url_list):
-    """Filters URLs that belong to the same domain as the base URL."""
-    base_domain = urlparse(base_url).netloc
-    return [url for url in url_list if urlparse(url).netloc == base_domain]
-
 
 async def worker(worker_id: int, browser):
     """Worker coroutine that processes URLs from the queue concurrently."""
@@ -486,18 +330,7 @@ async def crawl_page(url: str, depth: int, file_name, browser):
     
 
 
-async def get_file_name(base_url):
-    try:
-        browser_conf = BrowserConfig(text_mode=True, light_mode=True, verbose=False)
-        async with AsyncWebCrawler(config=browser_conf) as crawler:
-            result = await crawler.arun(url=base_url)
-            title = result.metadata["title"]
-            clean_title = re.sub(r'[^\w\s]', '', title)  # Remove special characters
-            clean_title = re.sub(r'\s+', '_', clean_title)  # Replace spaces with underscores
-            return clean_title
-    except Exception as e:
-        print(f"[ERROR] Failed to get title for {base_url}: {e}")
-        return urlparse(base_url).netloc.replace(".", "_")
+
 
 
 

@@ -86,6 +86,6 @@
 # ]
 
 start_urls = [
-    "https://ai.google.dev/gemini-api/docs"
+    "https://docs.pinecone.io/guides/indexes/create-an-index"
 ]
 

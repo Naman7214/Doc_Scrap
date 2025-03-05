@@ -6,7 +6,8 @@ from config import (
     pc, INDEX_NAME, MAX_LLM_REQUEST_COUNT,
     CHUNK_SEMAPHORE_LIMIT, MAX_CONCURRENT_TASKS
 )
-from crawler import worker, queue, results, processed_urls,get_file_name, save_results
+from crawler import worker, queue, results, processed_urls
+from utils.crawler_utils import get_file_name ,save_results
 from crawler import llm_request_counts, count_locks
 from chunker import process_file, process_summary_file
 from embedding import process_files
@@ -61,7 +62,7 @@ async def main(start_urls: list[str], num_workers: int = 60):
     print("\n--- CRAWL SUMMARY ---")
     for file_name, count in llm_request_counts.items():
         print(f"{file_name}: {count}/{max_llm_request_count} LLM calls, {len(results.get(file_name, []))} pages crawled")
-    
+    2/0
     #================================================================================================
     #================================= CHUNKING ====================================================
     #================================================================================================
