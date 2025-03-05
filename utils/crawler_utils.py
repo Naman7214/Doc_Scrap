@@ -93,7 +93,6 @@ async def save_results(results: dict, directory: str = "results"):
     
     # Run all save tasks concurrently
     await asyncio.gather(*save_tasks)
-    
 
 def clean_gpt_output(response_text):
     """Cleans GPT output by removing code block markers and ensuring a valid list format."""

@@ -52,7 +52,7 @@ async def process_summary_file(file_path):
     if len(links)> 180:
         links = links[:180]
     filtered_links = await filter_links_gpt(f"{summary_links_prompt}\n**INPUT:**\n{links}\n**OUTPUT:**", log_file)
-   
+    
     content_data = fetch_content(data, filtered_links)
     responses = await generate_summary_chunk(f"{summary_prompt}\n**INPUT:**\n{content_data}\n**OUTPUT:**", log_file)
     

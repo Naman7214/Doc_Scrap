@@ -10,7 +10,7 @@ from openai import Client
 from typing import List, Dict
 from config import (
     client, OPENAI_API_KEY, GEMINI_API_KEY, pc,
-    MAX_DEPTH, MAX_LLM_REQUEST_COUNT
+    MAX_DEPTH, MAX_LLM_REQUEST_COUNT, MAX_CONCURRENT_CLICKS, SELECTOR_HIERARCHY, PROGRAMMING_LANGUAGES
 )
 import aiofiles
 import json
@@ -24,30 +24,7 @@ count_locks = {}
 
 
 max_llm_request_count = MAX_LLM_REQUEST_COUNT
-# Adding the selector hierarchy from the second code
-SELECTOR_HIERARCHY = [
-    "button[role='tab']",
-    "div[role='tab']",
-    "[class*='data-lang']",
-    "[class*='language-']",
-    "[role='option']",
-    "select",
-    "option",
-    "button, div, span, li",
-]
 
-PROGRAMMING_LANGUAGES = {
-    "http", "python", "javascript", "typescript", "rust", "java", "csharp", 
-    "go", "curl", "json", "c#", "csharp", "node.js", "node", "npm", "yarn", "pnpm", "react", 
-    "angular", "vue", "svelte", "sql", "php", "ruby", "twilio-cli","node","cpp",".net","stripe-cli","scala","r"
-}
-
-# Maximum number of concurrent browser contexts to use
-MAX_CONTEXTS = 10
-# Maximum number of tabs per browser context
-MAX_TABS_PER_CONTEXT = 5
-# Maximum concurrent click operations per page
-MAX_CONCURRENT_CLICKS = 5
 
 
 async def handle_element_and_extract(page, element, text, seen_code_blocks, should_click=True):
