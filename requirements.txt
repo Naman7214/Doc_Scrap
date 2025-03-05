@@ -5,7 +5,7 @@ google-genai
 python-dotenv
 fastembed
 sentence-transformers
-pinecone_text
+pinecone-text
 black
 autoflake
 isort
