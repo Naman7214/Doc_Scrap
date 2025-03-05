@@ -243,13 +243,13 @@ async def filter_links_gpt(links, file_name):
         return []
 
 
-async def worker(worker_id: int, browser):
+async def worker_for_full_page(worker_id: int):
     """Worker coroutine that processes URLs from the queue concurrently."""
     while True:
         try:
             url, depth, file_name = await queue.get()
 
-            await crawl_page(url, depth, file_name, browser)
+            await crawl_page(url, depth, file_name)
 
         except asyncio.CancelledError:
             break
@@ -259,7 +259,8 @@ async def worker(worker_id: int, browser):
             queue.task_done()
 
 
-async def crawl_page(url: str, depth: int, file_name, browser):
+
+async def crawl_page(url: str, depth: int, file_name):
     """
     Scrape a single URL using Crawl4AI, extract internal links, and process markdown.
     """
@@ -313,10 +314,10 @@ async def crawl_page(url: str, depth: int, file_name, browser):
     # merged_content = merge_content(result.fit_markdown, hidden_snippets)
     # results[file_name].append({"href": url, "content": merged_content})
 
-    hidden_snippets = await extract_hidden_snippets(url=url, browser=browser)
-    md_content = result.fit_markdown
-    final_md_content = merge_content(md_content, hidden_snippets)
-    results[file_name].append({"href": url, "content": final_md_content})
+    #hidden_snippets = await extract_hidden_snippets(url=url, browser=browser)
+    #md_content = result.fit_markdown
+    #final_md_content = merge_content(md_content, hidden_snippets)
+    results[file_name].append({"href": url, "content": result.fit_markdown})
 
     # Only continue if we haven't reached the LLM limit
     if not await should_process_url(file_name):
@@ -355,3 +356,59 @@ async def crawl_page(url: str, depth: int, file_name, browser):
     # Add all new links to queue at once
     for link_info in new_links:
         await queue.put(link_info)
+
+async def worker_for_code_snippets(queue, results, browser):
+    """Worker that processes items from the queue and updates the results."""
+    while not queue.empty():
+        try:
+            file_name, url, md_content = await queue.get()
+            # Call the async function to extract hidden snippets
+            hidden_snippets = await extract_hidden_snippets(url=url, browser=browser)
+            # Merge the original markdown content with the extracted snippets
+            final_md_content = merge_content(md_content, hidden_snippets)
+            # Append the updated content to the results for that file_name
+            results[file_name].append({"href": url, "content": final_md_content})
+        except asyncio.QueueEmpty:
+            break
+        except asyncio.CancelledError:
+            break
+        except Exception as e:
+            print(f"[WORKER ERROR] In Code snippets Worker : {e}")
+        finally:
+            queue.task_done()
+        
+
+async def code_snippets_crawler(num_workers, results, browser):
+    """
+    Distributes work among a pool of async workers.
+
+    Parameters:
+        num_workers (int): Number of concurrent worker tasks.
+        results (dict): Dictionary with keys like "pinecone_doc" or "groq_docs", where
+                        each value is a list of dictionaries containing "href" and "content".
+        browser: An instance of the playwright browser.
+    """
+    # Create a queue to hold the tasks
+    queue = asyncio.Queue()
+
+    # Populate the queue with items from the results dictionary
+    # Each item is a tuple: (file_name, url, md_content)
+    for file_name, items in results.items():
+        for item in items:
+            url = item["href"]
+            md_content = item["content"]
+            queue.put_nowait((file_name, url, md_content))
+
+    # Start a pool of workers
+    tasks = [asyncio.create_task(worker_for_code_snippets(queue, results, browser))
+            for _ in range(num_workers)]
+
+    # Wait until the queue is fully processed
+    await queue.join()
+
+    # Optionally cancel any lingering tasks (if any)
+    for task in tasks:
+        task.cancel()
+
+    # Return the updated results if needed
+    return results

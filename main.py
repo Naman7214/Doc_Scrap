@@ -13,7 +13,7 @@ from config import (
     MAX_LLM_REQUEST_COUNT,
     pc,
 )
-from crawler import processed_urls, queue, worker, llm_request_counts, count_locks, results
+from crawler import processed_urls, queue, worker_for_full_page, llm_request_counts, count_locks, results, code_snippets_crawler
 from embedding import process_files
 from urls import start_urls
 from utils.crawler_utils import get_file_name, save_results
@@ -52,7 +52,7 @@ async def main(start_urls: list[str], num_workers: int = 60):
 
         # Create worker tasks
         tasks = [
-            asyncio.create_task(worker(i, browser)) for i in range(num_workers)
+            asyncio.create_task(worker_for_full_page(i)) for i in range(num_workers)
         ]
 
         # Wait for all queue tasks to be processed
@@ -61,7 +61,9 @@ async def main(start_urls: list[str], num_workers: int = 60):
         # Cancel all worker tasks
         for task in tasks:
             task.cancel()
-
+            
+        # comment below code to ignore the hidden code snippets.
+        results = await  code_snippets_crawler( num_workers= 25, results= results, browser= browser)
         # Save results
         await save_results(results)
 

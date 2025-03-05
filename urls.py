@@ -87,7 +87,7 @@
 
 start_urls = [
     # "https://graphql.org/learn/",
-    "https://docs.anthropic.com/",
+    #"https://docs.anthropic.com/",
     # "https://docs.cohere.com/reference/about",
     # "https://weaviate.io/developers/weaviate",
     # "https://docs.haystack.deepset.ai/",
@@ -98,4 +98,5 @@ start_urls = [
     # "https://express-validator.github.io/docs/",
     # "https://docs.jax.dev/en/latest/",
     # "https://dvc.org/doc",
+    "https://docs.pinecone.io/guides/data/upsert-data"
 ]
